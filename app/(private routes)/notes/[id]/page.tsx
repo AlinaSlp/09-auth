@@ -3,31 +3,35 @@ import {
   dehydrate,
   HydrationBoundary,
 } from '@tanstack/react-query';
-import { fetchNoteById } from '@/lib/api/serverApi';
+import { fetchNoteByIdServer } from '@/lib/api/serverApi';
 import NoteDetailsClient from './NoteDetails.client';
 import { Metadata } from 'next';
 
-export async function generateMetadata({
-  params,
-}: {
+type Props = {
   params: Promise<{ id: string }>;
-}): Promise<Metadata> {
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const note = await fetchNoteById(id);
+
+  const note = await fetchNoteByIdServer(id);
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+  const description =
+    note.content?.trim().length === 0
+      ? 'View note details in NoteHub.'
+      : note.content.slice(0, 160);
 
   return {
     title: `Note: ${note.title}`,
-    description:
-      note.content?.trim().length === 0
-        ? 'View note details in NoteHub.'
-        : note.content.slice(0, 160),
+    description,
+    alternates: {
+      canonical: `${baseUrl}/notes/${id}`,
+    },
     openGraph: {
       title: `Note: ${note.title}`,
-      description:
-        note.content?.trim().length === 0
-          ? 'View note details in NoteHub.'
-          : note.content.slice(0, 160),
-      url: `https://08-zustand-dgzirgrbj-alinas-projects-b7b7e1d5.vercel.app/${id}`,
+      description,
+      url: `${baseUrl}/notes/${id}`,
       siteName: 'NoteHub',
       images: [
         {
@@ -37,7 +41,7 @@ export async function generateMetadata({
           alt: note.title,
         },
       ],
-      type: 'website',
+      type: 'article',
     },
   };
 }
@@ -49,15 +53,15 @@ export default async function NoteDetailsPage({
 }) {
   const { id } = await params;
 
-  const queryClient = new QueryClient();
+  const qc = new QueryClient();
 
-  await queryClient.prefetchQuery({
+  await qc.prefetchQuery({
     queryKey: ['note', id],
-    queryFn: () => fetchNoteById(id),
+    queryFn: () => fetchNoteByIdServer(id),
   });
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
+    <HydrationBoundary state={dehydrate(qc)}>
       <NoteDetailsClient />
     </HydrationBoundary>
   );

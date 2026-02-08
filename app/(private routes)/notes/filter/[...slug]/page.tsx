@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-query';
 
 import NotesClient from './Notes.client';
-import { fetchNotes } from '@/lib/api/serverApi';
+import { fetchNotesServer } from '@/lib/api/serverApi';
 import type { Metadata } from 'next';
 
 type Props = {
@@ -59,7 +59,7 @@ export default async function FilterPage({
   await qc.prefetchQuery({
     queryKey: ['notes', tag, 1, '', PER_PAGE],
     queryFn: () =>
-      fetchNotes({
+      fetchNotesServer({
         page: 1,
         perPage: PER_PAGE,
         search: '',

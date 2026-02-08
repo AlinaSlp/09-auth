@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
+import { AxiosResponse } from 'axios';
 import { api } from './api';
 import { User } from '@/types/user';
 import { Note } from '@/types/note';
@@ -9,46 +10,65 @@ export type ServerRequestOptions = {
   cookie?: string;
 };
 
-const getAuthHeaders = (options?: ServerRequestOptions) => {
-  const cookieStore = cookies();
-  return {
-    Cookie: options?.cookie ?? cookieStore.toString(),
-  };
+const getAuthHeaders = async (options?: ServerRequestOptions) => {
+  if (options?.cookie) return options.cookie;
+  const h = await headers();
+  return h.get('cookie') ?? '';
 };
 
-export const checkSession = async (
-  options?: ServerRequestOptions
-): Promise<User | null> => {
-  const res = await api.get('/auth/session', {
-    headers: getAuthHeaders(options),
-  });
-  return res.data ?? null;
+// ===== Notes (SERVER) =====
+export type FetchNotesResponse = {
+  notes: Note[];
+  totalPages: number;
+  page: number;
+  perPage: number;
 };
 
-export const getMe = async (options?: ServerRequestOptions): Promise<User> => {
-  const res = await api.get('/users/me', {
-    headers: getAuthHeaders(options),
-  });
-  return res.data;
+export type FetchNotesParams = {
+  page: number;
+  perPage: number;
+  search?: string;
+  tag?: string;
 };
 
-export const fetchNotes = async (
-  params?: { page?: number; perPage?: number; search?: string; tag?: string },
-  options?: ServerRequestOptions
-): Promise<Note[]> => {
-  const res = await api.get('/notes', {
-    headers: getAuthHeaders(options),
+export async function fetchNotesServer(
+  params: FetchNotesParams,
+  opts?: ServerRequestOptions
+): Promise<FetchNotesResponse> {
+  const cookie = await getAuthHeaders(opts);
+  const { data } = await api.get<FetchNotesResponse>('/notes', {
     params,
+    headers: { cookie },
   });
-  return res.data;
-};
+  return data;
+}
 
-export const fetchNoteById = async (
+export async function fetchNoteByIdServer(
   id: string,
-  options?: ServerRequestOptions
-): Promise<Note> => {
-  const res = await api.get(`/notes/${id}`, {
-    headers: getAuthHeaders(options),
+  opts?: ServerRequestOptions
+): Promise<Note> {
+  const cookie = await getAuthHeaders(opts);
+  const { data } = await api.get<Note>(`/notes/${id}`, {
+    headers: { cookie },
   });
-  return res.data;
-};
+  return data;
+}
+
+// ===== Auth/User (SERVER) =====
+
+export async function checkSessionServer(
+  opts?: ServerRequestOptions
+): Promise<AxiosResponse<User | null>> {
+  const cookie = await getAuthHeaders(opts);
+  return api.get<User | null>('/auth/session', {
+    headers: { cookie },
+  });
+}
+
+export async function getMeServer(opts?: ServerRequestOptions): Promise<User> {
+  const cookie = await getAuthHeaders(opts);
+  const { data } = await api.get<User>('/users/me', {
+    headers: { cookie },
+  });
+  return data;
+}
