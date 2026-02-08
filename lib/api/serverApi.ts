@@ -1,7 +1,6 @@
 import 'server-only';
 
 import { cookies } from 'next/headers';
-import axios from 'axios';
 import { api } from './api';
 import { User } from '@/types/user';
 import { Note } from '@/types/note';
