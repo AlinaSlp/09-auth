@@ -1,4 +1,4 @@
-import api from './api';
+import { api } from './api';
 import { User } from '@/types/user';
 import { Note, NotesResponse } from '@/types/note';
 
@@ -47,7 +47,10 @@ export const fetchNotes = async (params?: {
   perPage?: number;
 }): Promise<NotesResponse> => {
   const res = await api.get('/notes', {
-    params: { ...params, perPage: 12 },
+    params: {
+      perPage: params?.perPage ?? 12,
+      ...params,
+    },
   });
   return res.data;
 };

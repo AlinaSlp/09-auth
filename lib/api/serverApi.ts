@@ -1,43 +1,53 @@
+import 'server-only';
+
 import { cookies } from 'next/headers';
 import axios from 'axios';
+import { api } from './api';
 import { User } from '@/types/user';
 import { Note } from '@/types/note';
 
-const serverApi = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
-});
+export type ServerRequestOptions = {
+  cookie?: string;
+};
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (options?: ServerRequestOptions) => {
   const cookieStore = cookies();
   return {
-    Cookie: cookieStore.toString(),
+    Cookie: options?.cookie ?? cookieStore.toString(),
   };
 };
 
-export const checkSession = async (): Promise<User | null> => {
-  const res = await serverApi.get('/auth/session', {
-    headers: getAuthHeaders(),
+export const checkSession = async (
+  options?: ServerRequestOptions
+): Promise<User | null> => {
+  const res = await api.get('/auth/session', {
+    headers: getAuthHeaders(options),
   });
   return res.data ?? null;
 };
 
-export const getMe = async (): Promise<User> => {
-  const res = await serverApi.get('/users/me', {
-    headers: getAuthHeaders(),
+export const getMe = async (options?: ServerRequestOptions): Promise<User> => {
+  const res = await api.get('/users/me', {
+    headers: getAuthHeaders(options),
   });
   return res.data;
 };
 
-export const fetchNotes = async (): Promise<Note[]> => {
-  const res = await serverApi.get('/notes', {
-    headers: getAuthHeaders(),
+export const fetchNotes = async (
+  options?: ServerRequestOptions
+): Promise<Note[]> => {
+  const res = await api.get('/notes', {
+    headers: getAuthHeaders(options),
   });
   return res.data;
 };
 
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const res = await serverApi.get(`/notes/${id}`, {
-    headers: getAuthHeaders(),
+export const fetchNoteById = async (
+  id: string,
+  options?: ServerRequestOptions
+): Promise<Note> => {
+  const res = await api.get(`/notes/${id}`, {
+    headers: getAuthHeaders(options),
   });
   return res.data;
 };

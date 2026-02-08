@@ -1,45 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ReactNode } from 'react';
 import { useAuthStore } from '@/lib/store/authStore';
-import { checkSession, logout } from '@/lib/api/clientApi';
-import { usePathname, useRouter } from 'next/navigation';
+import { checkSession } from '@/lib/api/clientApi';
+import Loader from '@/components/Loader/Loader';
 
-export default function AuthProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { setUser, clearIsAuthenticated } = useAuthStore();
-  const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
-  const router = useRouter();
+export default function AuthProvider({ children }: { children: ReactNode }) {
+  const { setUser, clearUser, isLoading, setLoading } = useAuthStore();
 
   useEffect(() => {
     const init = async () => {
       try {
         const user = await checkSession();
-        if (user) {
-          setUser(user);
-        } else if (
-          pathname.startsWith('/profile') ||
-          pathname.startsWith('/notes')
-        ) {
-          await logout();
-          clearIsAuthenticated();
-          router.replace('/sign-in');
-        }
+        if (user) setUser(user);
+        else clearUser();
       } catch {
-        clearIsAuthenticated();
+        clearUser();
       } finally {
         setLoading(false);
       }
     };
-
     init();
-  }, [pathname, router, setUser, clearIsAuthenticated]);
+  }, [setUser, clearUser, setLoading]);
 
-  if (loading) return <p>Loading...</p>;
+  if (isLoading) return <Loader />;
 
   return <>{children}</>;
 }
