@@ -33,10 +33,12 @@ export const getMe = async (options?: ServerRequestOptions): Promise<User> => {
 };
 
 export const fetchNotes = async (
+  params?: { page?: number; perPage?: number; search?: string; tag?: string },
   options?: ServerRequestOptions
 ): Promise<Note[]> => {
   const res = await api.get('/notes', {
     headers: getAuthHeaders(options),
+    params,
   });
   return res.data;
 };
