@@ -12,21 +12,26 @@ export default function SignInPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.ChangeEvent<HTMLFormElement>) => {
-    const form = e.currentTarget;
+  async function handleSubmit(e: React.ChangeEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get('email') ?? '').trim();
+    const password = String(form.get('password') ?? '');
 
     try {
-      setIsLoading(true);
-      const user = await login({
-        email: form.email.value,
-        password: form.password.value,
-      });
+      const user = await login({ email, password });
       setUser(user);
-      router.push('/profile');
-    } catch (error) {
-      setError('Login failed');
+      router.push('/');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      setError(message);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }
 
   return (
     <main className={css.mainContent}>

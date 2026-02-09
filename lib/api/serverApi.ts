@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { AxiosResponse } from 'axios';
 import { api } from './api';
 import { User } from '@/types/user';
-import { Note, NotesResponse } from '@/types/note';
+import { Note } from '@/types/note';
 
 export type ServerRequestOptions = {
   cookie?: string;

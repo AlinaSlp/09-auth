@@ -5,9 +5,22 @@ import { getMeServer } from '@/lib/api/serverApi';
 import css from './ProfilePage.module.css';
 
 export const metadata: Metadata = {
-  title: 'Profile | NoteHub',
-  description: 'User profile page',
-  robots: 'noindex, nofollow',
+  title: 'Profile — NoteHub',
+  description: 'Your NoteHub profile page.',
+  openGraph: {
+    title: 'Profile — NoteHub',
+    description: 'Your NoteHub profile page.',
+    url: 'http://localhost:3000/profile',
+    images: [
+      {
+        url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'NoteHub',
+      },
+    ],
+    type: 'website',
+  },
 };
 
 export default async function ProfilePage() {
@@ -19,7 +32,11 @@ export default async function ProfilePage() {
         <div className={css.header}>
           <h1 className={css.formTitle}>Profile Page</h1>
 
-          <Link href="/profile/edit" className={css.editProfileButton}>
+          <Link
+            href="/profile/edit"
+            className={css.editProfileButton}
+            prefetch={false}
+          >
             Edit Profile
           </Link>
         </div>
@@ -31,6 +48,7 @@ export default async function ProfilePage() {
             width={120}
             height={120}
             className={css.avatar}
+            priority
           />
         </div>
 

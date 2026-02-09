@@ -12,20 +12,25 @@ export default function SignUpPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.ChangeEvent<HTMLFormElement>) => {
+  async function handleSubmit(e: React.ChangeEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = e.currentTarget;
+    setError('');
+    setIsLoading(true);
+
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get('email') ?? '').trim();
+    const password = String(form.get('password') ?? '');
 
     try {
-      setIsLoading(true);
-      const user = await register({
-        email: form.email.value,
-        password: form.password.value,
-      });
+      const user = await register({ email, password });
       setUser(user);
       router.push('/profile');
-    } catch {
-      setError('Registration failed');
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Registration failed';
+      setError(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
