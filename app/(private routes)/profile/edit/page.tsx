@@ -1,44 +1,94 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getMe, updateMe } from '@/lib/api/clientApi';
-import { User } from '@/types/user';
+
 import css from './EditProfilePage.module.css';
+
+import { getMe, updateMe } from '@/lib/api/clientApi';
+import { useAuthStore } from '@/lib/store/authStore';
+import Loader from '@/components/Loader/Loader';
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+
+  const user = useAuthStore(s => s.user);
+  const setUser = useAuthStore(s => s.setUser);
+
+  const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    const fetchUser = async () => {
+    let cancelled = false;
+
+    async function load() {
+      setIsLoading(true);
+      setError('');
+
       try {
+        if (user) {
+          if (cancelled) return;
+          setUsername(user.username ?? '');
+          setEmail(user.email ?? '');
+          setAvatar(user.avatar ?? '');
+          return;
+        }
+
         const me = await getMe();
+        if (cancelled) return;
+
         setUser(me);
-        setUsername(me.username);
+        setUsername(me.username ?? '');
+        setEmail(me.email ?? '');
+        setAvatar(me.avatar ?? '');
+      } catch (e) {
+        if (!cancelled) setError('Failed to load profile.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
     };
+  }, [user, setUser]);
 
-    fetchUser();
-  }, []);
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError('');
 
-    await updateMe({ username });
+    const nextUsername = username.trim();
+
+    if (nextUsername.length === 0) {
+      setError('Username is required.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const updated = await updateMe({ username: nextUsername });
+      setUser(updated);
+
+      router.push('/profile');
+    } catch (e) {
+      setError('Failed to update profile.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleCancel() {
     router.push('/profile');
-  };
+  }
 
-  const handleCancel = () => {
-    router.push('/profile');
-  };
-
-  if (loading || !user) return <p>Loading...</p>;
+  if (isLoading) return <Loader />;
 
   return (
     <main className={css.mainContent}>
@@ -46,14 +96,17 @@ export default function EditProfilePage() {
         <h1 className={css.formTitle}>Edit Profile</h1>
 
         <Image
-          src={user.avatar}
+          src={
+            avatar ||
+            'https://ac.goit.global/fullstack/react/default-avatar.png'
+          }
           alt="User Avatar"
           width={120}
           height={120}
           className={css.avatar}
         />
 
-        <form onSubmit={handleSubmit} className={css.profileInfo}>
+        <form className={css.profileInfo} onSubmit={handleSubmit}>
           <div className={css.usernameWrapper}>
             <label htmlFor="username">Username:</label>
             <input
@@ -66,7 +119,7 @@ export default function EditProfilePage() {
             />
           </div>
 
-          <p>Email: {user.email}</p>
+          <p>Email: {email}</p>
 
           <div className={css.actions}>
             <button type="submit" className={css.saveButton}>
@@ -74,12 +127,14 @@ export default function EditProfilePage() {
             </button>
             <button
               type="button"
-              onClick={handleCancel}
               className={css.cancelButton}
+              onClick={handleCancel}
             >
               Cancel
             </button>
           </div>
+
+          {error && <p className={css.error}>{error}</p>}
         </form>
       </div>
     </main>

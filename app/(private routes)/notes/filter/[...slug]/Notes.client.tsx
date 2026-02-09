@@ -1,22 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useDebounce } from 'use-debounce';
 
 import css from './NotesPage.module.css';
 import { fetchNotes } from '@/lib/api/clientApi';
+import { useAuthStore } from '@/lib/store/authStore';
 import NoteList from '@/components/NoteList/NoteList';
 import Pagination from '@/components/Pagination/Pagination';
 import SearchBox from '@/components/SearchBox/SearchBox';
 import Loader from '@/components/Loader/Loader';
+import { useRouter } from 'next/navigation';
 
 const PER_PAGE = 12;
 
 export default function NotesClient({ tag }: { tag?: string }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const { isAuthenticated } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/sign-in');
+    }
+  }, [isAuthenticated, router]);
 
   const [debouncedSearch] = useDebounce(search, 500);
 

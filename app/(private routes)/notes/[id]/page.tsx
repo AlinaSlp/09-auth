@@ -3,9 +3,10 @@ import {
   dehydrate,
   HydrationBoundary,
 } from '@tanstack/react-query';
-import { fetchNoteByIdServer } from '@/lib/api/serverApi';
+import { fetchNoteByIdServer, getMeServer } from '@/lib/api/serverApi';
 import NoteDetailsClient from './NoteDetails.client';
-import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -14,8 +15,13 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
 
-  const note = await fetchNoteByIdServer(id);
+  try {
+    await getMeServer();
+  } catch {
+    redirect('/sign-in');
+  }
 
+  const note = await fetchNoteByIdServer(id);
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
   const description =
     note.content?.trim().length === 0
@@ -25,9 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `Note: ${note.title}`,
     description,
-    alternates: {
-      canonical: `${baseUrl}/notes/${id}`,
-    },
+    alternates: { canonical: `${baseUrl}/notes/${id}` },
     openGraph: {
       title: `Note: ${note.title}`,
       description,
@@ -46,15 +50,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function NoteDetailsPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function NoteDetailsPage({ params }: Props) {
   const { id } = await params;
 
-  const qc = new QueryClient();
+  try {
+    await getMeServer();
+  } catch {
+    redirect('/sign-in');
+  }
 
+  const qc = new QueryClient();
   await qc.prefetchQuery({
     queryKey: ['note', id],
     queryFn: () => fetchNoteByIdServer(id),
