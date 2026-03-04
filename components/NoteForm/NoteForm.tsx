@@ -2,36 +2,64 @@
 
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createNote } from '@/lib/api/clientApi';
-import { useNoteStore } from '@/lib/store/noteStore';
+
 import css from './NoteForm.module.css';
+import { createNote } from '@/lib/api/clientApi';
+import type { NoteTag } from '@/types/note';
+import { useNoteStore } from '@/lib/store/noteStore';
+
+const allowedTags: NoteTag[] = [
+  'Todo',
+  'Work',
+  'Personal',
+  'Meeting',
+  'Shopping',
+];
 
 export default function NoteForm() {
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
-  const { draft, setDraft, clearDraft } = useNoteStore();
+  const draft = useNoteStore(s => s.draft);
+  const setDraft = useNoteStore(s => s.setDraft);
+  const clearDraft = useNoteStore(s => s.clearDraft);
 
   const mutation = useMutation({
     mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-      clearDraft();
-      router.back();
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['notes'] });
     },
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    mutation.mutate(draft);
-  };
+  function updateField(name: 'title' | 'content' | 'tag', value: string) {
+    setDraft({
+      ...draft,
+      [name]: name === 'tag' ? (value as NoteTag) : value,
+    });
+  }
 
-  const handleCancel = () => {
+  async function createNoteAction(formData: FormData) {
+    const title = String(formData.get('title') ?? '').trim();
+    const content = String(formData.get('content') ?? '');
+    const tagRaw = String(formData.get('tag') ?? 'Todo');
+    const tag = (
+      allowedTags.includes(tagRaw as NoteTag) ? tagRaw : 'Todo'
+    ) as NoteTag;
+
+    if (title.length < 3 || title.length > 50) return;
+    if (content.length > 500) return;
+
+    await mutation.mutateAsync({ title, content, tag });
+    clearDraft();
     router.back();
-  };
+  }
+
+  function handleCancel() {
+    router.back();
+  }
 
   return (
-    <form className={css.form} onSubmit={handleSubmit}>
+    <form className={css.form} action={createNoteAction}>
       <div className={css.formGroup}>
         <label htmlFor="title">Title</label>
         <input
@@ -39,11 +67,8 @@ export default function NoteForm() {
           name="title"
           type="text"
           className={css.input}
-          required
-          minLength={3}
-          maxLength={50}
           value={draft.title}
-          onChange={e => setDraft({ title: e.target.value })}
+          onChange={e => updateField('title', e.target.value)}
         />
       </div>
 
@@ -53,10 +78,9 @@ export default function NoteForm() {
           id="content"
           name="content"
           rows={8}
-          maxLength={500}
           className={css.textarea}
           value={draft.content}
-          onChange={e => setDraft({ content: e.target.value })}
+          onChange={e => updateField('content', e.target.value)}
         />
       </div>
 
@@ -67,7 +91,7 @@ export default function NoteForm() {
           name="tag"
           className={css.select}
           value={draft.tag}
-          onChange={e => setDraft({ tag: e.target.value })}
+          onChange={e => updateField('tag', e.target.value)}
         >
           <option value="Todo">Todo</option>
           <option value="Work">Work</option>
