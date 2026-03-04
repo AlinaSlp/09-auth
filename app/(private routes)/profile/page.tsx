@@ -1,8 +1,9 @@
-import Image from 'next/image';
 import Link from 'next/link';
-import { Metadata } from 'next';
-import { getMeServer } from '@/lib/api/serverApi';
+import Image from 'next/image';
+import type { Metadata } from 'next';
 import css from './ProfilePage.module.css';
+
+import { getMeServer } from '@/lib/api/serverApi';
 
 export const metadata: Metadata = {
   title: 'Profile — NoteHub',
@@ -31,7 +32,6 @@ export default async function ProfilePage() {
       <div className={css.profileCard}>
         <div className={css.header}>
           <h1 className={css.formTitle}>Profile Page</h1>
-
           <Link
             href="/profile/edit"
             className={css.editProfileButton}
