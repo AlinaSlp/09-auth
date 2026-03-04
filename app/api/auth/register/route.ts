@@ -6,9 +6,8 @@ import { isAxiosError } from 'axios';
 import { logErrorResponse } from '../../_utils/utils';
 
 export async function POST(req: NextRequest) {
+  const body = await req.json();
   try {
-    const body = await req.json();
-
     const apiRes = await api.post('auth/register', body);
 
     const cookieStore = await cookies();
